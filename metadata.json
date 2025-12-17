@@ -1,0 +1,8 @@
+{
+  "name": "MMD ASSIST",
+  "description": "A sophisticated AI platform created by Mamad Krafte featuring multi-modal intelligence powered by Gemini.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
