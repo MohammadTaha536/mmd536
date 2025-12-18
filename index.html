@@ -1,71 +1,44 @@
 <!DOCTYPE html>
 <html lang="fa" class="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>اپلیکیشن من</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>صفحه تست بدون Build</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Tailwind via CDN (برای production توصیه نمیشه ولی برای تست OK) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- فونت‌ها -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Global Styles -->
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-        }
-
-        .rtl {
-            direction: rtl;
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-    </style>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .rtl { direction: rtl; }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
+  <div id="root"></div>
 
-    <!-- React + ReactDOM + Lucide (از CDN) -->
-    <script type="module">
-        import React from "https://esm.sh/react@19.2.3";
-        import ReactDOM from "https://esm.sh/react-dom@19.2.3/client";
-        import * as LucideIcons from "https://esm.sh/lucide-react@0.561.0";
+  <!-- React بدون build -->
+  <script type="module">
+    import React from "https://esm.sh/react@19.2.3";
+    import ReactDOM from "https://esm.sh/react-dom@19.2.3/client";
 
-        // مثال کامپوننت
-        const App = () => {
-            return React.createElement(
-                "div",
-                { className: "p-6" },
-                React.createElement("h1", { className: "text-3xl font-bold mb-4" }, "سلام دنیا!"),
-                React.createElement("p", null, "این یک پروژه تستی با React و Tailwind است."),
-                React.createElement(LucideIcons.Activity, { className: "text-white w-12 h-12 mt-4" })
-            );
-        };
+    function App() {
+      return React.createElement(
+        "div",
+        { className: "p-8 text-center" },
+        "سلام طاها! 🎉 صفحه بدون build بالا آمد."
+      );
+    }
 
-        // رندر
-        ReactDOM.createRoot(document.getElementById("root")).render(
-            React.createElement(App)
-        );
-    </script>
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(React.createElement(App));
+  </script>
 </body>
 </html>
