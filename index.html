@@ -1,44 +1,90 @@
 <!DOCTYPE html>
-<html lang="fa" class="rtl">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>صفحه تست بدون Build</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MMD ASSIST - Standalone</title>
 
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS از CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- فونت‌ها -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- فونت‌ها -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet"
+    />
 
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
-    }
-    .rtl { direction: rtl; }
-  </style>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .rtl {
+            direction: rtl;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
+    <div id="root"></div>
 
-  <!-- React بدون build -->
-  <script type="module">
-    import React from "https://esm.sh/react@19.2.3";
-    import ReactDOM from "https://esm.sh/react-dom@19.2.3/client";
+    <!-- React + ReactDOM از CDN -->
+    <script type="module">
+        import React from 'https://esm.sh/react@19.2.3';
+        import ReactDOM from 'https://esm.sh/react-dom@19.2.3/client';
+        import Hls from 'https://esm.sh/hls.js@1.5.15';
 
-    function App() {
-      return React.createElement(
-        "div",
-        { className: "p-8 text-center" },
-        "سلام طاها! 🎉 صفحه بدون build بالا آمد."
-      );
-    }
+        // --- کامپوننت اصلی ---
+        function App() {
+            const [videoUrl, setVideoUrl] = React.useState(
+                "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+            );
 
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(React.createElement(App));
-  </script>
+            const videoRef = React.useRef(null);
+
+            React.useEffect(() => {
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(videoUrl);
+                    hls.attachMedia(videoRef.current);
+                    return () => hls.destroy();
+                }
+            }, [videoUrl]);
+
+            return (
+                <div className="p-6">
+                    <h1 className="text-3xl font-bold mb-4">MMD ASSIST</h1>
+                    <video ref={videoRef} controls className="w-full max-w-xl rounded-md" />
+                    <div className="mt-4">
+                        <input
+                            type="text"
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                            placeholder="Enter HLS URL"
+                            className="p-2 rounded text-black w-full"
+                        />
+                    </div>
+                </div>
+            );
+        }
+
+        // --- لود کردن React ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
