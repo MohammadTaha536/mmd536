@@ -1,20 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" class="rtl">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MMD ASSIST</title>
+    <title>اپلیکیشن من</title>
 
-    <!-- Tailwind CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
-        rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind via CDN (برای production توصیه نمیشه ولی برای تست OK) -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Global Styles -->
     <style>
@@ -23,44 +19,53 @@
             background-color: #0f172a;
             color: #f8fafc;
         }
+
         .rtl {
             direction: rtl;
         }
+
         ::-webkit-scrollbar {
             width: 6px;
         }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #334155;
             border-radius: 10px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #475569;
         }
     </style>
-
-    <!-- Import Map -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@19.2.3",
-        "react-dom": "https://esm.sh/react-dom@19.2.3",
-        "react-dom/client": "https://esm.sh/react-dom@19.2.3/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.561.0",
-        "@google/genai": "https://esm.sh/@google/genai@1.34.0",
-        "hls.js": "https://esm.sh/hls.js@1.5.15"
-      }
-    }
-    </script>
 </head>
-
 <body>
     <div id="root"></div>
 
-    <!-- React Entry Point -->
-    <script type="module" src="/src/index.tsx"></script>
+    <!-- React + ReactDOM + Lucide (از CDN) -->
+    <script type="module">
+        import React from "https://esm.sh/react@19.2.3";
+        import ReactDOM from "https://esm.sh/react-dom@19.2.3/client";
+        import * as LucideIcons from "https://esm.sh/lucide-react@0.561.0";
+
+        // مثال کامپوننت
+        const App = () => {
+            return React.createElement(
+                "div",
+                { className: "p-6" },
+                React.createElement("h1", { className: "text-3xl font-bold mb-4" }, "سلام دنیا!"),
+                React.createElement("p", null, "این یک پروژه تستی با React و Tailwind است."),
+                React.createElement(LucideIcons.Activity, { className: "text-white w-12 h-12 mt-4" })
+            );
+        };
+
+        // رندر
+        ReactDOM.createRoot(document.getElementById("root")).render(
+            React.createElement(App)
+        );
+    </script>
 </body>
 </html>
-
