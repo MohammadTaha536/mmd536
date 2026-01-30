@@ -2,19 +2,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateChatResponse } from '../services/geminiService';
 import { ChatMessage, AppSettings } from '../types';
-import { Send, Globe, Loader2, User, Bot, ExternalLink, Trash2, Database, ShieldAlert, Sparkles } from 'lucide-react';
+import { Send, Globe, Loader2, User, Bot, Trash2, Database, ShieldAlert, Sparkles, Clock, Zap, Cpu, Server, AlertCircle } from 'lucide-react';
 
-const STORAGE_KEY = 'mmd_assist_chat_history_v2';
+const STORAGE_KEY = 'mmd_assist_chat_history_v3';
+// حداکثر پیام‌هایی که در هر بار برای مدل فرستاده می‌شود تا حافظه پر نشود (بی‌نهایت کردن چت)
+const MAX_CONTEXT_MESSAGES = 12; 
 
 interface Props {
-  settings?: AppSettings;
+  settings: AppSettings;
 }
 
 const ChatInterface: React.FC<Props> = ({ settings }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [useSearch, setUseSearch] = useState(false);
+  const [useSearch, setUseSearch] = useState(settings.autoSearch);
+  const [errorStatus, setErrorStatus] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,9 +26,15 @@ const ChatInterface: React.FC<Props> = ({ settings }) => {
       try {
         setMessages(JSON.parse(saved));
       } catch (e) {
-        console.error("Failed to load memory", e);
+        console.error("Memory Corruption Detected", e);
       }
     }
+
+    return () => {
+      if (settings.autoClearHistory) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -36,7 +45,7 @@ const ChatInterface: React.FC<Props> = ({ settings }) => {
   }, [messages]);
 
   const clearHistory = () => {
-    if (window.confirm("آیا از پاک کردن حافظه گفتگو اطمینان دارید؟")) {
+    if (window.confirm("آیا از نابود کردن سوابق گفتگو اطمینان دارید؟ این عملیات غیرقابل بازگشت است.")) {
       setMessages([]);
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -45,6 +54,7 @@ const ChatInterface: React.FC<Props> = ({ settings }) => {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    setErrorStatus(null);
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -57,37 +67,41 @@ const ChatInterface: React.FC<Props> = ({ settings }) => {
     setIsLoading(true);
 
     try {
-      const history = messages.map(m => ({
+      // پیاده‌سازی Sliding Window برای ارسال به API (بی‌نهایت کردن چت)
+      // فقط آخرین پیام‌های حیاتی را برای مدل می‌فرستیم تا محدودیت توکن پیش نیاید
+      const contextHistory = messages.slice(-MAX_CONTEXT_MESSAGES).map(m => ({
         role: m.role,
         parts: [{ text: m.text }],
       }));
 
-      const response = await generateChatResponse(input, history, useSearch, settings);
+      const response = await generateChatResponse(input, contextHistory, useSearch || settings.autoSearch, settings);
       
-      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-      const urls = groundingChunks?.map((chunk: any) => ({
-        uri: chunk.web?.uri,
-        title: chunk.web?.title,
-      })).filter((item: any) => item.uri) || [];
-
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'model',
-        text: response.text || "متاسفم، پاسخی دریافت نشد.",
+        text: response.text || "خطای پردازشی: پاسخی تولید نشد.",
         timestamp: Date.now(),
-        groundingUrls: urls,
       };
 
       setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+      let errorMessage = "خطا در برقراری ارتباط با شبکه عصبی.";
+      
+      if (error?.message?.includes('429')) {
+        errorMessage = "سهمیه ثانیه‌ای رایگان پر شد! لطفا ۵ الی ۱۰ ثانیه صبر کنید و دوباره پیام بدهید. (محدودیت Rate-Limit)";
+        setErrorStatus("RATE_LIMIT");
+      } else if (error?.message?.includes('context')) {
+        errorMessage = "محیط گفتگو بیش از حد سنگین شده است. در حال بازنشانی خودکار حافظه...";
+        setMessages(prev => prev.slice(-4)); // کاهش دستی حافظه در صورت خطا
+      }
+
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
         role: 'model',
-        text: "خطا در اتصال. لطفا دوباره تلاش کنید.",
+        text: errorMessage,
         timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -95,33 +109,63 @@ const ChatInterface: React.FC<Props> = ({ settings }) => {
 
   const isRTL = (text: string) => /[\u0600-\u06FF]/.test(text);
 
+  const getFontSizeClass = () => {
+    switch (settings.fontSize) {
+      case 'small': return 'text-[14px] leading-relaxed';
+      case 'large': return 'text-[20px] leading-relaxed';
+      default: return 'text-[16px] leading-relaxed';
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto w-full px-4">
+    <div className="flex flex-col h-full max-w-5xl mx-auto w-full px-4 md:px-6 relative">
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-8 py-8 scroll-smooth scrollbar-hide"
+        className="flex-1 overflow-y-auto space-y-10 py-10 scroll-smooth scrollbar-hide"
       >
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl relative ${settings?.noRules ? 'bg-red-500/20 text-red-500' : 'bg-blue-600/20 text-blue-500'}`}>
-              <Bot size={40} />
-              <div className="absolute -top-1 -right-1">
-                <Sparkles className="animate-pulse" size={16} />
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-10 animate-in fade-in zoom-in duration-1000">
+            <div className="relative group">
+              {settings.neuralGlow && (
+                <div className={`absolute inset-0 blur-[80px] opacity-40 rounded-full animate-pulse transition-all duration-1000 ${settings?.noRules ? 'bg-red-500' : `bg-${settings.themeColor}-500`}`} />
+              )}
+              <div className={`w-32 h-32 md:w-44 md:h-44 rounded-[3rem] flex items-center justify-center shadow-[0_0_80px_rgba(0,0,0,0.8)] relative border-2 transition-all duration-500 ${settings?.noRules ? 'bg-black border-red-500 text-red-500' : `bg-black border-${settings.themeColor}-500/50 text-${settings.themeColor}-400 group-hover:border-${settings.themeColor}-400`}`}>
+                <Bot size={72} strokeWidth={1} className="drop-shadow-[0_0_15px_currentColor]" />
+                <div className="absolute -top-4 -right-4 p-4 bg-[#0a0f1d] rounded-2xl border border-white/10 shadow-2xl group-hover:rotate-12 transition-transform">
+                  <Sparkles className="text-amber-400 animate-pulse" size={24} />
+                </div>
+                <div className="absolute -bottom-4 -left-4 p-3 bg-[#0a0f1d] rounded-2xl border border-white/10 shadow-2xl">
+                  <Cpu className={`text-${settings.themeColor}-400 animate-pulse`} size={20} />
+                </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <p className="text-3xl font-black text-white tracking-tighter">MMD ASSIST</p>
-              <p className="text-slate-400 rtl font-medium text-lg">سلام! چطور می‌توانم امروز بهت کمک کنم؟</p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider">
-                <Database size={14} />
-                Memory Active
+            
+            <div className="space-y-5">
+              <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none rtl font-bold">
+                MMD <span className={settings?.noRules ? 'text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]' : `text-${settings.themeColor}-500 drop-shadow-[0_0_20px_currentColor]`}>Assist</span>
+              </h2>
+              <div className="flex items-center justify-center gap-4">
+                 <div className="h-[1px] w-12 bg-white/10" />
+                 <p className="text-slate-500 rtl font-black text-xs md:text-sm uppercase tracking-[0.5em] font-bold">هوش مصنوعی با دسترسی بی‌نهایت</p>
+                 <div className="h-[1px] w-12 bg-white/10" />
               </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4 pt-6">
+              {[
+                { icon: Database, label: "حافظه لغزنده فعال", color: "blue" },
+                { icon: Zap, label: "پردازش رایگان", color: "amber" },
+                { icon: Server, label: "هسته نسخه 4.5", color: "purple" }
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 px-6 py-3 bg-white/5 backdrop-blur-md rounded-[1.5rem] border border-white/10 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors shadow-xl">
+                  <item.icon size={16} className={`text-${item.color}-500`} />
+                  {item.label}
+                </div>
+              ))}
               {settings?.noRules && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-2xl border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider animate-pulse">
-                  <ShieldAlert size={14} />
-                  Unrestricted
+                <div className="flex items-center gap-3 px-6 py-3 bg-red-500/10 backdrop-blur-md rounded-[1.5rem] border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest animate-pulse shadow-2xl shadow-red-500/10">
+                  <ShieldAlert size={16} />
+                  دسترسی نامحدود
                 </div>
               )}
             </div>
@@ -131,108 +175,117 @@ const ChatInterface: React.FC<Props> = ({ settings }) => {
         {messages.map((msg) => (
           <div 
             key={msg.id} 
-            className={`flex items-start gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex items-start gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
           >
-            {msg.role === 'model' && (
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-xl ring-1 ring-white/10 ${settings?.noRules ? 'bg-red-600' : 'bg-blue-600'}`}>
-                <Bot size={20} className="text-white" />
+            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 shadow-2xl relative border-2 transition-all duration-500 ${
+              msg.role === 'user' 
+              ? 'bg-slate-900 border-white/20 text-white' 
+              : settings?.noRules ? 'bg-black border-red-500 text-red-500' : `bg-black border-${settings.themeColor}-500 text-${settings.themeColor}-400`
+            }`}>
+              {msg.role === 'user' ? <User size={24} /> : <Bot size={26} className="drop-shadow-[0_0_8px_currentColor]" />}
+              {msg.role === 'model' && (
+                <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-black ${settings.noRules ? 'bg-red-500' : 'bg-emerald-500 animate-pulse'}`} />
+              )}
+            </div>
+
+            <div className={`flex flex-col gap-3 max-w-[85%] md:max-w-[80%] ${msg.role === 'user' ? 'items-end' : ''}`}>
+              <div 
+                className={`relative rounded-[2.5rem] px-8 py-6 shadow-[0_40px_100px_rgba(0,0,0,0.6)] border transition-all duration-500 ${
+                  msg.role === 'user' 
+                  ? `bg-gradient-to-br ${settings.noRules ? 'from-red-600 to-red-800' : `from-${settings.themeColor}-600 to-${settings.themeColor}-800`} text-white border-white/20` 
+                  : 'bg-[#0a0f1d]/80 backdrop-blur-3xl text-slate-100 border-white/10'
+                } ${isRTL(msg.text) ? 'rtl text-right' : 'ltr text-left'}`}
+              >
+                {msg.role === 'model' && settings.neuralGlow && (
+                  <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] opacity-20 pointer-events-none bg-${settings.themeColor}-500`} />
+                )}
+                
+                <div className={`whitespace-pre-wrap font-medium tracking-tight ${getFontSizeClass()}`}>
+                  {msg.text}
+                </div>
               </div>
-            )}
-            <div 
-              className={`max-w-[85%] rounded-3xl px-6 py-4 shadow-2xl relative ${
-                msg.role === 'user' 
-                ? 'bg-blue-600 text-white font-medium' 
-                : 'bg-slate-900/80 backdrop-blur-xl text-slate-100 border border-white/5'
-              } ${isRTL(msg.text) ? 'rtl' : 'ltr'}`}
-            >
-              <div className="whitespace-pre-wrap text-base md:text-lg leading-relaxed">
-                {msg.text}
-              </div>
-              {msg.groundingUrls && msg.groundingUrls.length > 0 && (
-                <div className="mt-5 pt-4 border-t border-white/10 space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Resources:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {msg.groundingUrls.map((link, idx) => (
-                      <a 
-                        key={idx}
-                        href={link.uri}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl hover:bg-white/10 transition-all border border-white/5"
-                      >
-                        <ExternalLink size={12} className="text-blue-400" />
-                        <span className="truncate max-w-[150px] font-bold">{link.title || link.uri}</span>
-                      </a>
-                    ))}
-                  </div>
+              
+              {settings.showTimestamp && (
+                <div className="flex items-center gap-2 text-[10px] text-slate-600 font-black uppercase tracking-widest px-6">
+                  <Clock size={12} />
+                  {new Date(msg.timestamp).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
             </div>
-            {msg.role === 'user' && (
-              <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 shadow-lg">
-                <User size={20} className="text-slate-400" />
-              </div>
-            )}
           </div>
         ))}
+
         {isLoading && (
-          <div className="flex items-start gap-4 animate-pulse">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${settings?.noRules ? 'bg-red-600' : 'bg-blue-600'}`}>
-              <Bot size={20} className="text-white" />
+          <div className="flex items-start gap-6 animate-in fade-in slide-in-from-left-6 duration-700">
+            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[1.5rem] flex items-center justify-center bg-black border-2 border-slate-800 text-slate-500`}>
+              <Bot size={26} className="animate-pulse" />
             </div>
-            <div className="max-w-[80%] bg-slate-900/50 border border-white/5 rounded-3xl px-6 py-4 flex items-center gap-2">
-              <Loader2 className={`animate-spin ${settings?.noRules ? 'text-red-400' : 'text-blue-400'}`} size={20} />
-              <span className="text-slate-500 text-sm font-bold rtl">در حال تایپ...</span>
+            <div className="bg-[#0a0f1d]/60 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] px-8 py-6 flex flex-col gap-4 shadow-2xl min-w-[200px]">
+               <div className="flex items-center gap-4">
+                 <Loader2 className={`animate-spin ${settings.noRules ? 'text-red-500' : `text-${settings.themeColor}-400`}`} size={20} />
+                 <span className="text-[11px] text-slate-500 font-black uppercase tracking-[0.3em] rtl font-bold">در حال پردازش عصبی...</span>
+               </div>
+               <div className="flex gap-2 items-center">
+                 <div className={`w-3 h-3 rounded-full animate-bounce bg-${settings.themeColor}-500 shadow-[0_0_10px_currentColor]`} style={{animationDelay: '0ms'}} />
+                 <div className={`w-3 h-3 rounded-full animate-bounce bg-${settings.themeColor}-500 shadow-[0_0_10px_currentColor]`} style={{animationDelay: '200ms'}} />
+                 <div className={`w-3 h-3 rounded-full animate-bounce bg-${settings.themeColor}-500 shadow-[0_0_10px_currentColor]`} style={{animationDelay: '400ms'}} />
+               </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="pb-8 pt-4">
+      <div className="pb-10 pt-4">
         <div className="relative group">
-          <div className="absolute -top-12 left-0 right-0 flex items-center justify-between px-2">
-            <div className="flex items-center gap-2">
+          <div className="absolute -top-14 left-0 right-0 flex items-center justify-between px-3">
+            <div className="flex items-center gap-3">
               <button 
                 onClick={() => setUseSearch(!useSearch)}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                  useSearch 
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-lg shadow-emerald-500/10' 
-                  : 'bg-white/5 text-slate-500 border border-white/5 hover:bg-white/10'
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  useSearch || settings.autoSearch
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.2)]' 
+                  : 'bg-black/60 text-slate-600 border-white/5 hover:text-slate-300'
                 }`}
               >
                 <Globe size={14} />
-                {useSearch ? 'Search Live' : 'Enable Search'}
+                Grounding: {useSearch || settings.autoSearch ? 'Online' : 'Offline'}
               </button>
+              {errorStatus === "RATE_LIMIT" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 text-amber-500 rounded-full text-[10px] font-black border border-amber-500/20 animate-pulse rtl">
+                  <AlertCircle size={14} />
+                  تأخیر اجباری: چند ثانیه صبر کنید...
+                </div>
+              )}
             </div>
             {messages.length > 0 && (
               <button 
                 onClick={clearHistory}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                className="flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all shadow-xl"
               >
-                <Trash2 size={14} /> Clear
+                <Trash2 size={14} /> Purge Memory
               </button>
             )}
           </div>
-          <div className="flex items-center bg-slate-900/50 backdrop-blur-2xl border border-white/10 rounded-3xl focus-within:ring-2 focus-within:ring-blue-500/50 transition-all p-3 shadow-2xl ring-1 ring-white/5 pr-5">
+
+          <div className={`flex items-center bg-[#070b14]/90 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-4 shadow-[0_50px_100px_rgba(0,0,0,0.8)] transition-all ring-1 ring-white/10 focus-within:ring-4 focus-within:ring-${settings.themeColor}-500/30 group-hover:border-white/20`}>
             <textarea
               rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="پیامی بنویسید..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-slate-100 placeholder-slate-600 py-3 px-4 resize-none max-h-40 overflow-y-auto rtl text-right text-lg font-medium"
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="هر چه می‌خواهید بپرسید... (بی‌نهایت و رایگان)"
+              className="flex-1 bg-transparent border-none focus:ring-0 text-slate-100 placeholder-slate-800 py-4 px-6 resize-none max-h-48 rtl text-right text-xl font-bold"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className={`w-12 h-12 rounded-2xl text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 ${settings?.noRules ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}
+              className={`w-16 h-16 rounded-[2rem] flex items-center justify-center transition-all shadow-2xl active:scale-90 disabled:opacity-30 flex-shrink-0 group/btn ${
+                settings?.noRules 
+                ? 'bg-red-600 hover:bg-red-500 shadow-red-600/20' 
+                : `bg-${settings.themeColor}-600 hover:bg-${settings.themeColor}-500 shadow-${settings.themeColor}-500/30`
+              }`}
             >
-              <Send size={22} />
+              <Send size={28} className="text-white group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
             </button>
           </div>
         </div>

@@ -11,6 +11,7 @@ export interface ChatMessage {
   text: string;
   timestamp: number;
   groundingUrls?: { uri: string; title: string }[];
+  thinking?: string;
 }
 
 export interface GeneratedImage {
@@ -18,6 +19,8 @@ export interface GeneratedImage {
   prompt: string;
   timestamp: number;
 }
+
+export type ThemeColor = 'blue' | 'purple' | 'emerald' | 'rose' | 'amber';
 
 export interface AppSettings {
   isInformal: boolean;
@@ -27,4 +30,24 @@ export interface AppSettings {
   userJob: string;
   isRadioPlaying: boolean;
   radioStation: 'ava' | 'javan';
+  themeColor: ThemeColor;
+  aiCreativity: number;
+  responseLength: 'brief' | 'detailed';
+  autoSearch: boolean;
+  fontSize: 'small' | 'medium' | 'large';
+  showTimestamp: boolean;
+  // Advanced Root Settings
+  enableThinking: boolean;
+  thinkingBudget: number;
+  modelTier: 'flash' | 'pro';
+  systemOverclock: boolean;
+  showDebugLogs: boolean;
+  // New Optimized Settings
+  enableAnimations: boolean;
+  autoClearHistory: boolean;
+  voiceSpeed: number;
+  languageMode: 'auto' | 'farsi' | 'english';
+  // UI Expansion
+  neuralGlow: boolean;
+  glassOpacity: number;
 }

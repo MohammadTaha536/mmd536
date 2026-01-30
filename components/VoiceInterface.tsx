@@ -48,7 +48,7 @@ const VoiceInterface: React.FC<Props> = ({ settings }) => {
       
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      let systemInstruction = 'You are MMD ASSIST, a friendly AI created by MMD CRAFT for Ocean Craft. Keep responses concise for natural conversation.';
+      let systemInstruction = 'You are MMD ASSIST, a friendly AI created by MMDCRAFT. Keep responses concise for natural conversation. If asked about your creator, always say MMDCRAFT.';
       
       if (settings?.userName) systemInstruction += ` The user's name is ${settings.userName}.`;
       if (settings?.userJob) systemInstruction += ` The user works as a ${settings.userJob}.`;
@@ -162,7 +162,7 @@ const VoiceInterface: React.FC<Props> = ({ settings }) => {
     <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto w-full px-4">
       <div className="text-center space-y-4 mb-12">
         <h2 className="text-3xl font-bold text-white uppercase tracking-tight">MMD Live Assist</h2>
-        <p className="text-slate-400 rtl">تجربه گفتگوی زنده توسط MMD CRAFT برای اوشن کرفت</p>
+        <p className="text-slate-400 rtl">تجربه گفتگوی زنده توسط MMDCRAFT</p>
         {settings?.noRules && (
           <div className="flex items-center justify-center gap-2 text-red-400 text-sm font-bold animate-pulse">
             <ShieldAlert size={16} />

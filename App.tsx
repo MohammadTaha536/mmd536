@@ -1,14 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppMode, AppSettings } from './types';
+import { AppMode, AppSettings, ThemeColor } from './types';
 import ChatInterface from './components/ChatInterface';
 import ImageGenInterface from './components/ImageGenInterface';
 import VoiceInterface from './components/VoiceInterface';
 import SettingsModal from './components/SettingsModal';
 import RadioPlayer from './components/RadioPlayer';
-import { MessageSquare, Image as ImageIcon, Mic, Sparkles, ShieldCheck, Settings as SettingsIcon } from 'lucide-react';
+import { MessageSquare, Image as ImageIcon, Mic, Sparkles, Settings as SettingsIcon, Terminal } from 'lucide-react';
 
-const STORAGE_SETTINGS_KEY = 'mmd_assist_settings_v6';
+const STORAGE_SETTINGS_KEY = 'mmd_assist_settings_v9';
+
+const THEME_MAP: Record<ThemeColor, string> = {
+  blue: 'from-blue-600 to-cyan-400',
+  purple: 'from-purple-600 to-fuchsia-400',
+  emerald: 'from-emerald-600 to-teal-400',
+  rose: 'from-rose-600 to-pink-400',
+  amber: 'from-amber-600 to-orange-400',
+};
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>(AppMode.CHAT);
@@ -20,7 +28,22 @@ const App: React.FC = () => {
     userJob: '',
     userContext: '',
     isRadioPlaying: false,
-    radioStation: 'ava'
+    radioStation: 'ava',
+    themeColor: 'blue',
+    aiCreativity: 0.7,
+    responseLength: 'detailed',
+    autoSearch: false,
+    fontSize: 'medium',
+    showTimestamp: true,
+    enableThinking: false,
+    thinkingBudget: 0,
+    modelTier: 'flash',
+    systemOverclock: false,
+    showDebugLogs: false,
+    enableAnimations: true,
+    autoClearHistory: false,
+    voiceSpeed: 1.0,
+    languageMode: 'auto'
   });
 
   useEffect(() => {
@@ -28,7 +51,7 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setSettings({ ...parsed, isRadioPlaying: false });
+        setSettings(prev => ({ ...prev, ...parsed, isRadioPlaying: false }));
       } catch (e) {
         console.error("Failed to load settings", e);
       }
@@ -48,49 +71,59 @@ const App: React.FC = () => {
     updateSettings({ ...settings, radioStation: station });
   };
 
-  const Navigation = () => (
-    <nav className="flex items-center justify-center gap-1.5 bg-slate-900/40 backdrop-blur-2xl border border-white/10 p-1.5 rounded-3xl shadow-2xl ring-1 ring-white/5">
-      {[
-        { id: AppMode.CHAT, icon: MessageSquare, label: 'Chat', color: 'bg-blue-600' },
-        { id: AppMode.IMAGE, icon: ImageIcon, label: 'Vision', color: 'bg-purple-600' },
-        { id: AppMode.VOICE, icon: Mic, label: 'Live', color: 'bg-emerald-600' },
-      ].map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => setMode(tab.id)}
-          className={`group flex items-center gap-2 px-5 py-3 rounded-2xl font-bold transition-all duration-300 ${
-            mode === tab.id 
-            ? `${tab.color} text-white shadow-lg shadow-white/5` 
-            : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <tab.icon size={18} className={mode === tab.id ? 'scale-110 transition-transform' : ''} />
-          <span className="hidden lg:inline text-xs tracking-wide">{tab.label}</span>
-        </button>
-      ))}
-    </nav>
-  );
+  const NavItems = [
+    { id: AppMode.CHAT, icon: MessageSquare, label: 'هسته گفتگو' },
+    { id: AppMode.IMAGE, icon: ImageIcon, label: 'موتور تصویر' },
+    { id: AppMode.VOICE, icon: Mic, label: 'لینک زنده' },
+  ];
 
   return (
-    <div className="flex flex-col h-screen bg-[#05080f] overflow-hidden text-slate-200 font-sans selection:bg-blue-500/30">
+    <div className={`flex flex-col h-[100dvh] bg-[#02040a] overflow-hidden text-slate-200 font-sans selection:bg-${settings.themeColor}-500/30 transition-all duration-700`}>
+      {/* Background FX */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className={`absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[150px] transition-colors duration-1000 ${settings.noRules ? 'bg-red-500/10' : 'bg-blue-600/10'}`} />
-        <div className={`absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[150px] transition-colors duration-1000 ${settings.noRules ? 'bg-orange-500/5' : 'bg-cyan-600/10'}`} />
+        <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[150px] opacity-20 transition-all duration-1000 ${settings.noRules ? 'bg-red-600' : `bg-${settings.themeColor}-600`}`} />
+        <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[150px] opacity-10 transition-all duration-1000 bg-slate-600`} />
+        {settings.enableAnimations && (
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[length:100%_4px,3px_100%] pointer-events-none opacity-20" />
+        )}
       </div>
 
-      <header className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-slate-950/20 backdrop-blur-2xl z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-2xl shadow-blue-500/40 relative">
-            <Sparkles className="text-white" size={24} />
-            <div className="absolute inset-0 rounded-2xl animate-pulse bg-white/20 blur-sm" />
+      <header className="flex items-center justify-between px-4 md:px-10 py-5 md:py-7 border-b border-white/5 bg-slate-950/20 backdrop-blur-3xl z-30 relative ring-1 ring-white/5">
+        <div className="flex items-center gap-4">
+          <div className={`w-10 h-10 md:w-14 md:h-14 rounded-[1.5rem] bg-gradient-to-tr ${THEME_MAP[settings.themeColor]} flex items-center justify-center shadow-2xl relative flex-shrink-0 group hover:rotate-6 transition-all duration-500`}>
+             <Sparkles className="text-white scale-90 md:scale-110" size={28} />
+             <div className="absolute inset-0 rounded-[1.5rem] animate-pulse bg-white/10 blur-md" />
           </div>
           <div className="rtl text-right">
-            <h1 className="text-2xl font-black bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent tracking-tighter uppercase leading-none">MMD ASSIST</h1>
-            <p className="text-[9px] uppercase tracking-[0.2em] text-blue-500 font-black mt-1">توسط MMD CRAFT برای اوشن کرفت</p>
+            <h1 className="text-xl md:text-3xl font-black bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent tracking-tighter uppercase leading-none italic">
+              MMD <span className={settings.noRules ? 'text-red-500' : `text-${settings.themeColor}-500`}>Assist</span>
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+               <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${settings.noRules ? 'bg-red-500' : 'bg-emerald-500'}`} />
+               <p className={`text-[8px] md:text-[10px] uppercase tracking-[0.4em] font-black text-slate-500`}>سیستم عصبی فعال</p>
+            </div>
           </div>
         </div>
         
-        <Navigation />
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-2 bg-black/40 backdrop-blur-2xl border border-white/10 p-2 rounded-[2.5rem] shadow-2xl ring-1 ring-white/5">
+          {NavItems.map((tab) => {
+            const isActive = mode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setMode(tab.id)}
+                className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.8rem] font-black uppercase tracking-widest text-[10px] transition-all duration-500 relative overflow-hidden group ${
+                  isActive ? 'bg-white/5 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)]' : 'text-slate-500 hover:text-white'
+                }`}
+              >
+                {isActive && <div className={`absolute inset-0 bg-${settings.themeColor}-500/10 animate-pulse`} />}
+                <tab.icon size={16} className={isActive ? `text-${settings.themeColor}-400` : 'group-hover:scale-110 transition-transform'} />
+                <span className="rtl font-bold">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
         <div className="flex items-center gap-4">
           <RadioPlayer 
@@ -100,20 +133,16 @@ const App: React.FC = () => {
             onStationChange={handleStationChange}
           />
           
-          <div className="hidden xl:flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-            <ShieldCheck size={14} className={settings.noRules ? "text-red-500 animate-pulse" : "text-emerald-500"} />
-            {settings.noRules ? "Unlocked" : "Secure"}
-          </div>
           <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-slate-400 hover:text-white hover:scale-105 active:scale-95 shadow-lg"
+            className="w-10 h-10 md:w-14 md:h-14 rounded-2xl md:rounded-[1.5rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-slate-400 hover:text-white shadow-2xl flex items-center justify-center relative group overflow-hidden"
           >
-            <SettingsIcon size={22} />
+            <SettingsIcon size={24} className="group-hover:rotate-90 transition-transform duration-700" />
           </button>
         </div>
       </header>
 
-      <main className="flex-1 relative z-10 overflow-hidden">
+      <main className="flex-1 relative z-10 overflow-hidden pb-[80px] md:pb-0">
         <div className="h-full w-full">
           {mode === AppMode.CHAT && <ChatInterface settings={settings} />}
           {mode === AppMode.IMAGE && <ImageGenInterface />}
@@ -121,12 +150,36 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <footer className="px-8 py-4 border-t border-white/5 text-center bg-slate-950/40 backdrop-blur-xl relative z-20">
-        <p className="text-xs text-slate-500 rtl font-medium flex items-center justify-center gap-2">
-          <span>ساخته شده با عشق برای</span>
-          <span className="text-blue-400 font-black tracking-widest px-2 py-0.5 bg-blue-500/10 rounded-lg">OCEAN CRAFT</span>
-          <span>توسط</span>
-          <span className="text-slate-200 font-black tracking-widest px-2 py-0.5 bg-white/5 rounded-lg">MMD CRAFT</span>
+      {/* Mobile Nav */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-6 pb-6">
+        <nav className="flex items-center justify-around bg-black/60 backdrop-blur-3xl border border-white/10 p-3 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] ring-1 ring-white/10">
+          {NavItems.map((tab) => {
+            const isActive = mode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setMode(tab.id)}
+                className={`flex flex-col items-center justify-center gap-1.5 px-6 py-3 rounded-2xl transition-all duration-500 ${
+                  isActive ? 'bg-white/5 text-white scale-105 shadow-xl' : 'text-slate-600'
+                }`}
+              >
+                <tab.icon size={22} className={isActive ? `text-${settings.themeColor}-400` : ''} />
+                <span className={`text-[8px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-40'}`}>{tab.label.split(' ')[0]}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Footer Branding */}
+      <footer className="hidden md:flex items-center justify-between px-10 py-5 border-t border-white/5 bg-slate-950/20 backdrop-blur-3xl relative z-20">
+         <div className="flex items-center gap-3">
+            <Terminal size={14} className="text-slate-700" />
+            <span className="text-[9px] text-slate-700 font-black uppercase tracking-[0.5em]">وضعیت سیستم: نرمال</span>
+         </div>
+         <p className="text-[10px] text-slate-600 rtl font-black flex items-center gap-3 italic">
+          <span>هویت سازنده:</span>
+          <span className={`px-3 py-1 bg-white/5 rounded-lg text-slate-300 font-black uppercase tracking-widest`}>MMDCRAFT</span>
         </p>
       </footer>
 
