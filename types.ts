@@ -50,4 +50,6 @@ export interface AppSettings {
   // UI Expansion
   neuralGlow: boolean;
   glassOpacity: number;
+  // Unrestricted Modes
+  visualBypass: boolean;
 }

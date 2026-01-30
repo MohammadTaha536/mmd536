@@ -5,7 +5,7 @@ import {
   Palette, Brain, Zap, Terminal, Cpu, Database, Activity, 
   Trash2, Layers, Gauge, FlaskConical, ShieldCheck,
   Volume2, History, Eye, EyeOff, Monitor, HardDrive, BarChart, Server,
-  Globe
+  Globe, Eye as EyeIcon
 } from 'lucide-react';
 import { AppSettings, ThemeColor } from '../types';
 
@@ -254,7 +254,6 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                         <h4 className="text-white font-black text-xs uppercase tracking-widest">شبکه جهانی زنده</h4>
                         <p className="text-[9px] text-slate-500 mt-1">Real-time Web Grounding</p>
                       </div>
-                      {/* Fix: Cannot find name 'Globe2'. Using imported Globe. */}
                       <Globe size={20} className={settings.autoSearch ? 'text-emerald-400' : 'text-slate-600'} />
                     </button>
                   </div>
@@ -329,14 +328,27 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="flex items-center justify-between bg-black/60 p-6 rounded-3xl border border-white/5">
                           <div className="rtl text-right">
-                            <h4 className="text-red-400 font-black text-xs uppercase tracking-widest">شکستن فیلترها</h4>
-                            <p className="text-[8px] text-slate-500 mt-1">Bypass all safety alignments</p>
+                            <h4 className="text-red-400 font-black text-xs uppercase tracking-widest">شکستن فیلترها (چت)</h4>
+                            <p className="text-[8px] text-slate-500 mt-1">Bypass all chat safety</p>
                           </div>
                           <button 
                             onClick={() => updateField('noRules', !settings.noRules)}
                             className={`w-14 h-8 rounded-full transition-all relative ${settings.noRules ? 'bg-red-600 shadow-[0_0_25px_rgba(220,38,38,0.5)]' : 'bg-slate-800'}`}
                           >
                             <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${settings.noRules ? 'right-1' : 'right-7'}`} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between bg-black/60 p-6 rounded-3xl border border-white/5">
+                          <div className="rtl text-right">
+                            <h4 className="text-orange-400 font-black text-xs uppercase tracking-widest">شکستن محدودیت بصری</h4>
+                            <p className="text-[8px] text-slate-500 mt-1">Unrestricted Art Engine</p>
+                          </div>
+                          <button 
+                            onClick={() => updateField('visualBypass', !settings.visualBypass)}
+                            className={`w-14 h-8 rounded-full transition-all relative ${settings.visualBypass ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.5)]' : 'bg-slate-800'}`}
+                          >
+                            <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${settings.visualBypass ? 'right-1' : 'right-7'}`} />
                           </button>
                         </div>
 

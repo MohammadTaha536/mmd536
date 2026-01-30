@@ -43,7 +43,10 @@ const App: React.FC = () => {
     enableAnimations: true,
     autoClearHistory: false,
     voiceSpeed: 1.0,
-    languageMode: 'auto'
+    languageMode: 'auto',
+    neuralGlow: true,
+    glassOpacity: 0.8,
+    visualBypass: false
   });
 
   useEffect(() => {
@@ -145,7 +148,7 @@ const App: React.FC = () => {
       <main className="flex-1 relative z-10 overflow-hidden pb-[80px] md:pb-0">
         <div className="h-full w-full">
           {mode === AppMode.CHAT && <ChatInterface settings={settings} />}
-          {mode === AppMode.IMAGE && <ImageGenInterface />}
+          {mode === AppMode.IMAGE && <ImageGenInterface settings={settings} />}
           {mode === AppMode.VOICE && <VoiceInterface settings={settings} />}
         </div>
       </main>
