@@ -2,7 +2,8 @@
 export enum AppMode {
   CHAT = 'CHAT',
   IMAGE = 'IMAGE',
-  VOICE = 'VOICE'
+  VOICE = 'VOICE',
+  APPS = 'APPS'
 }
 
 export interface ChatMessage {
@@ -21,6 +22,15 @@ export interface GeneratedImage {
 }
 
 export type ThemeColor = 'blue' | 'purple' | 'emerald' | 'rose' | 'amber';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: string;
+  avatar?: string;
+  isLoggedIn: boolean;
+  registrationDate: number;
+}
 
 export interface AppSettings {
   isInformal: boolean;
@@ -52,4 +62,6 @@ export interface AppSettings {
   glassOpacity: number;
   // Unrestricted Modes
   visualBypass: boolean;
+  // Auth
+  userProfile: UserProfile;
 }

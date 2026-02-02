@@ -70,7 +70,8 @@ const VoiceInterface: React.FC<Props> = ({ settings }) => {
     setNeuralEnergy(prev => Math.max(0, prev - ENERGY_TO_START));
     
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      // Create a new GoogleGenAI instance right before making an API call per guidelines
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       inputAudioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       outputAudioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -90,6 +91,7 @@ const VoiceInterface: React.FC<Props> = ({ settings }) => {
               const int16 = new Int16Array(inputData.length);
               for (let i = 0; i < inputData.length; i++) int16[i] = inputData[i] * 32768;
               const pcmData = encodePCM(new Uint8Array(int16.buffer));
+              // Use sessionPromise.then to avoid race conditions as per guidelines
               sessionPromise.then(session => session.sendRealtimeInput({ media: { data: pcmData, mimeType: 'audio/pcm;rate=16000' } }));
             };
             source.connect(scriptProcessor);

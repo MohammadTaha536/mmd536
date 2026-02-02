@@ -3,9 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Lock, Settings, UserCheck, ShieldAlert, Check, User, 
   Palette, Brain, Zap, Terminal, Cpu, Database, Activity, 
-  Trash2, Layers, Gauge, FlaskConical, ShieldCheck,
-  Volume2, History, Eye, EyeOff, Monitor, HardDrive, BarChart, Server,
-  Globe, Eye as EyeIcon
+  Trash2, Gauge, ShieldCheck, Monitor, HardDrive, BarChart, Server,
+  Command, Globe
 } from 'lucide-react';
 import { AppSettings, ThemeColor } from '../types';
 
@@ -80,10 +79,8 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-3xl animate-in fade-in duration-500">
       <div className="bg-[#030712]/95 border border-white/10 w-full max-w-3xl rounded-[2.5rem] shadow-[0_0_150px_rgba(0,0,0,1)] overflow-hidden flex flex-col h-[90vh] md:max-h-[85vh] relative group">
         
-        {/* Decorative elements */}
         <div className={`absolute top-0 right-0 w-64 h-64 blur-[120px] opacity-20 bg-${settings.themeColor}-600 pointer-events-none`} />
         
-        {/* Header */}
         <div className="flex items-center justify-between p-6 md:p-8 border-b border-white/5 bg-slate-900/20 backdrop-blur-md relative z-10">
           <div className="flex items-center gap-5">
             <div className={`w-14 h-14 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center shadow-2xl relative overflow-hidden group-hover:border-${settings.themeColor}-500/50 transition-colors`}>
@@ -92,7 +89,7 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
             </div>
             <div className="rtl text-right">
               <h2 className="text-white font-black text-2xl tracking-tighter uppercase leading-none">پیکربندی هسته عصبی</h2>
-              <p className="text-[9px] text-slate-500 uppercase tracking-[0.4em] font-black mt-2">Neural Engine Interface v4.5.0</p>
+              <p className="text-[9px] text-slate-500 uppercase tracking-[0.4em] font-black mt-2">Neural Engine Interface v4.5.1</p>
             </div>
           </div>
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-red-500/10 hover:text-red-500 rounded-2xl transition-all border border-white/5">
@@ -101,7 +98,6 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
         </div>
 
         <div className="flex flex-1 overflow-hidden relative z-10">
-          {/* Sidebar */}
           <div className="w-24 md:w-64 border-r border-white/5 bg-black/40 flex flex-col py-8 px-3 gap-3 overflow-y-auto">
             <TabButton id="profile" icon={User} label="پروفایل اپراتور" />
             <TabButton id="appearance" icon={Monitor} label="رابط گرافیکی" />
@@ -119,11 +115,24 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
             </div>
           </div>
 
-          {/* Content Area */}
           <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-12 scrollbar-hide bg-[#05080f]/50">
             
             {activeTab === 'profile' && (
               <div className="space-y-10 animate-in slide-in-from-right-8 duration-500">
+                <div className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] flex items-center gap-6 rtl">
+                   <div className={`w-20 h-20 rounded-full bg-${settings.themeColor}-500/10 border-2 border-${settings.themeColor}-500 flex items-center justify-center text-white text-3xl font-black`}>
+                     {settings.userProfile.name.charAt(0)}
+                   </div>
+                   <div>
+                     <h3 className="text-white text-xl font-black uppercase">{settings.userProfile.name}</h3>
+                     <p className="text-slate-500 text-[10px] font-bold mt-1 tracking-widest uppercase">{settings.userProfile.id}</p>
+                     <div className="flex items-center gap-2 mt-2">
+                       <ShieldCheck size={12} className="text-emerald-500" />
+                       <span className="text-[9px] text-emerald-500 font-black uppercase">Verified Operator</span>
+                     </div>
+                   </div>
+                </div>
+
                 <div className="space-y-6">
                   <div className="flex items-center gap-4 rtl">
                     <UserCheck className={`text-${settings.themeColor}-400`} size={24} />
@@ -147,21 +156,6 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="p-8 bg-white/5 border border-white/5 rounded-[2.5rem] space-y-6">
-                   <div className="flex items-center justify-between">
-                     <div className="rtl text-right">
-                       <h4 className="text-white font-bold text-sm">پاک‌سازی زباله‌های حافظه</h4>
-                       <p className="text-[10px] text-slate-500 mt-1">تخلیه خودکار کش پس از پایان سشن</p>
-                     </div>
-                     <button 
-                      onClick={() => updateField('autoClearHistory', !settings.autoClearHistory)}
-                      className={`w-12 h-7 rounded-full transition-all relative ${settings.autoClearHistory ? `bg-${settings.themeColor}-600` : 'bg-slate-800'}`}
-                     >
-                      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${settings.autoClearHistory ? 'right-1' : 'right-6'}`} />
-                     </button>
-                   </div>
                 </div>
               </div>
             )}
@@ -422,12 +416,11 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 bg-slate-950 flex items-center justify-between border-t border-white/5 px-10 relative overflow-hidden">
           <div className={`absolute inset-0 bg-${settings.themeColor}-500/5 pointer-events-none`} />
           <div className="flex items-center gap-4 text-slate-500 text-[11px] font-black tracking-[0.4em] uppercase relative z-10">
             <Cpu size={16} className={`text-${settings.themeColor}-500 animate-pulse`} />
-            Engine Core v4.5
+            Engine Core v4.5.1
           </div>
           <p className="text-[10px] text-slate-400 rtl font-black italic uppercase tracking-[0.2em] relative z-10">
             شناسه توسعه‌دهنده: MMDCRAFT
